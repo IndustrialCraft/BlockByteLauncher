@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSettings>
+#include <QStandardPaths>
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,10 +20,38 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->addServerButton, &QPushButton::clicked, this, &MainWindow::slot_add_server_dialog);
     connect(ui->refreshServersButton, &QPushButton::clicked, this, &MainWindow::slot_refresh_all);
     this->loadServers();
+    auto appData = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
+    appData.mkpath("binaries");
+    load_binaries();
+    m_running_process = nullptr;
+    QSettings settings;
+    auto selectedBinary = settings.value("selectedBinary");
+    if(selectedBinary.isNull()){
+        //todo: select newest
+    } else {
+        ui->versionSelector->setCurrentText(selectedBinary.toString());
+    }
+    connect(ui->versionSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::slot_change_binary);
 }
 MainWindow::~MainWindow()
 {
     delete ui;
+    if(m_running_process){
+        delete m_running_process;
+        m_running_process = nullptr;
+    }
+}
+void MainWindow::load_binaries(){
+    ui->versionSelector->clear();
+    auto appData = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
+    appData.cd("binaries");
+    for(const auto& binary : appData.entryList(QDir::Filter::Files)){
+        ui->versionSelector->addItem(binary);
+    }
+}
+void MainWindow::slot_change_binary(){
+    QSettings settings;
+    settings.setValue("selectedBinary", ui->versionSelector->currentText());
 }
 void MainWindow::slot_add_server_dialog(){
     AddServerDialog* dialog = new AddServerDialog;
@@ -44,11 +74,12 @@ void MainWindow::rebuild_server_list_widget(){
         auto* textLayout = new QVBoxLayout;
         auto* textWidget = new QWidget;
         textLayout->addWidget(new QLabel(server->getName() + " - " + server->getAddress()));
-        textLayout->addWidget(new QLabel(server->getMotd() + ":" + server->getRefreshStageString()));
+        bool connectable = server->getRefreshStage()==RefreshStage::Connectable;
+        textLayout->addWidget(new QLabel(connectable?server->getMotd():server->getRefreshStageString()));
         textWidget->setLayout(textLayout);
         layout->addWidget(textWidget);
-        auto* joinButton = new QPushButton("join");
-        joinButton->setEnabled(server->getRefreshStage() == RefreshStage::Connectable);
+        auto* joinButton = new QPushButton(m_running_process?"running":"join");
+        joinButton->setEnabled(connectable && (!m_running_process));
         connect(joinButton, &QPushButton::clicked, [this,uuid]{this->join_server(uuid);});
         layout->addWidget(joinButton);
         auto* refreshButton = new QPushButton("refresh");
@@ -63,7 +94,28 @@ void MainWindow::rebuild_server_list_widget(){
         this->ui->serverList->setItemWidget(item, widget);
     }
 }
-void MainWindow::join_server(QUuid uuid){}
+void MainWindow::join_server(QUuid uuid){
+    auto* server = this->m_servers[uuid];
+    if(server && m_running_process == nullptr){
+        this->m_running_process = new QProcess();
+        auto binary = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
+        binary.cd("binaries");
+        auto assets = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
+        assets.cd("assets");
+        QStringList arguments;
+        arguments << assets.absolutePath() << server->getAddress();
+        connect(m_running_process, qOverload<int,QProcess::ExitStatus>(&QProcess::finished), this, &MainWindow::slot_process_exit);
+        this->m_running_process->start(binary.filePath(ui->versionSelector->currentText()), arguments);
+        rebuild_server_list_widget();
+    }
+}
+void MainWindow::slot_process_exit(int exitCode, QProcess::ExitStatus status){
+    if(m_running_process){
+        delete this->m_running_process;
+        this->m_running_process = nullptr;
+        rebuild_server_list_widget();
+    }
+}
 void MainWindow::refresh_server(QUuid uuid){
     auto* server = this->m_servers[uuid];
     if(server)

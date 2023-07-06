@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName("BlockByte");
-    QCoreApplication::setApplicationName("BlockByte Launcher");
+    QCoreApplication::setApplicationName("BlockByteLauncher");
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

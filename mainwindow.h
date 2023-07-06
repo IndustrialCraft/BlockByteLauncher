@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QUuid>
 #include <QWebSocket>
+#include <QProcess>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,14 +25,18 @@ public:
 private:
     Ui::MainWindow *ui;
     QHash<QUuid,ServerEntry*> m_servers;
+    QProcess* m_running_process;
 private slots:
     void slot_add_server_dialog();
     void slot_add_server(QString name, QString address);
     void slot_refresh_all();
+    void slot_process_exit(int exitCode, QProcess::ExitStatus status);
+    void slot_change_binary();
 private:
     void join_server(QUuid uuid);
     void refresh_server(QUuid uuid);
     void delete_server(QUuid uuid);
+    void load_binaries();
 public:
     void rebuild_server_list_widget();
     void saveServers();
