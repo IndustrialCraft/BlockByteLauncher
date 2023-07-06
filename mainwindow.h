@@ -32,8 +32,11 @@ private slots:
     void slot_refresh_all();
     void slot_process_exit(int exitCode, QProcess::ExitStatus status);
     void slot_change_binary();
+    void slot_binary_ready_stdout();
+    void slot_binary_ready_stderr();
 private:
     void join_server(QUuid uuid);
+    void download_server_assets(QUuid uuid);
     void refresh_server(QUuid uuid);
     void delete_server(QUuid uuid);
     void load_binaries();
@@ -55,12 +58,16 @@ private:
     QWebSocket m_websocket;
     QString m_motd;
     RefreshStage m_refresh_stage;
+    QString m_assets_hash;
+    bool m_ws_assets;
 public:
     void refresh();
+    void downloadAssets();
 private slots:
     void slot_ws_connect();
     void slot_ws_error(QAbstractSocket::SocketError error);
     void slot_ws_receive_text(QString json);
+    void slot_ws_receive_binary(QByteArray data);
 public:
     QUuid const& getID() const;
     QString const& getName() const;
@@ -68,6 +75,8 @@ public:
     QString const& getMotd() const;
     RefreshStage getRefreshStage() const;
     char const* getRefreshStageString() const;
+    QString const& getAssetsHash() const;
+    bool areAssetsDownloaded() const;
 }
 ;
 
