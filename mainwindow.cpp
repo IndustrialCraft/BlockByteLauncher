@@ -218,8 +218,10 @@ void ServerEntry::slot_ws_receive_binary(QByteArray data){
     auto assets = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
     assets.mkdir("assets");
     assets.cd("assets");
-    assets.rmpath(this->getAssetsHash());
-    assets.mkpath(this->getAssetsHash());
+    assets.cd(this->getAssetsHash());
+    assets.removeRecursively();
+    assets.cdUp();
+    assets.mkdir(this->getAssetsHash());
     assets.cd(this->getAssetsHash());
     QFile file(assets.filePath("tmp.zip"));
     if ( file.open(QIODevice::WriteOnly) )
@@ -227,12 +229,22 @@ void ServerEntry::slot_ws_receive_binary(QByteArray data){
         file.write(data);
         file.close();
     }
-    QProcess unzipper;
-    QStringList unzipperArgs;
-    unzipperArgs << assets.filePath("tmp.zip") << "-d" << assets.absolutePath();
-    unzipper.start("unzip", unzipperArgs);
-    unzipper.waitForFinished();
-    assets.remove("tmp.zip");
+    {
+        QProcess unzipper;
+        QStringList unzipperArgs;
+        unzipperArgs << assets.filePath("tmp.zip") << "-d" << assets.absolutePath();
+        unzipper.start("unzip", unzipperArgs);
+        unzipper.waitForFinished();
+        assets.remove("tmp.zip");
+    }
+    {
+        auto defaultAssets = assets;
+        defaultAssets.cdUp();
+        defaultAssets.cd("default");
+        for(const auto& file : defaultAssets.entryList(QDir::Filter::Files)){
+            QFile::copy(defaultAssets.filePath(file), assets.filePath(file));
+        }
+    }
     m_main_window.rebuild_server_list_widget();
 }
 bool ServerEntry::areAssetsDownloaded() const{
