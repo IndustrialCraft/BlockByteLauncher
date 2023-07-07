@@ -218,9 +218,10 @@ void ServerEntry::slot_ws_receive_binary(QByteArray data){
     auto assets = QDir(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0]);
     assets.mkdir("assets");
     assets.cd("assets");
-    assets.cd(this->getAssetsHash());
-    assets.removeRecursively();
-    assets.cdUp();
+    if(assets.cd(this->getAssetsHash())){
+        assets.removeRecursively();
+        assets.cdUp();
+    }
     assets.mkdir(this->getAssetsHash());
     assets.cd(this->getAssetsHash());
     QFile file(assets.filePath("tmp.zip"));
