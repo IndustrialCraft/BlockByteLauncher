@@ -51,16 +51,16 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QPushButton" name="refreshServersButton">
+        <widget class="QPushButton" name="addServerButton">
          <property name="text">
-          <string>Refresh Servers</string>
+          <string>Add server</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="addServerButton">
+        <widget class="QPushButton" name="refreshServersButton">
          <property name="text">
-          <string>Add server</string>
+          <string>Refresh Servers</string>
          </property>
         </widget>
        </item>
