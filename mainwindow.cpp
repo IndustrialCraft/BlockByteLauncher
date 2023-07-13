@@ -113,9 +113,9 @@ void MainWindow::join_server(QUuid uuid){
         connect(m_running_process, qOverload<int,QProcess::ExitStatus>(&QProcess::finished), this, &MainWindow::slot_process_exit);
         connect(m_running_process, &QProcess::readyReadStandardOutput, this, &MainWindow::slot_binary_ready_stdout);
         connect(m_running_process, &QProcess::readyReadStandardError, this, &MainWindow::slot_binary_ready_stderr);
-        /*auto environment = QProcessEnvironment::systemEnvironment();
+        auto environment = QProcessEnvironment::systemEnvironment();
         environment.insert("RUST_BACKTRACE", "1");
-        this->m_running_process->setProcessEnvironment(environment);*/
+        this->m_running_process->setProcessEnvironment(environment);
         this->m_running_process->start(binary.filePath(ui->versionSelector->currentText()), arguments);
         rebuild_server_list_widget();
     }
