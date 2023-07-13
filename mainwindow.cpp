@@ -133,10 +133,16 @@ void MainWindow::slot_process_exit(int exitCode, QProcess::ExitStatus status){
     }
 }
 void MainWindow::slot_binary_ready_stdout(){
-    qDebug() << "[OUT]" << m_running_process->readAllStandardOutput();
+    auto str = QString::fromStdString(m_running_process->readAllStandardOutput().toStdString());
+    for(const auto& line : str.split("\n")){
+        qDebug() << "[OUT]" << line;
+    }
 }
 void MainWindow::slot_binary_ready_stderr(){
-    qDebug() << "[ERR]" << m_running_process->readAllStandardError();
+    auto str = QString::fromStdString(m_running_process->readAllStandardError().toStdString());
+    for(const auto& line : str.split("\n")){
+        qDebug() << "[ERR]" << line;
+    }
 }
 void MainWindow::refresh_server(QUuid uuid){
     auto* server = this->m_servers[uuid];
